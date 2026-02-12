@@ -1,0 +1,15 @@
+# Data and artifacts
+data/
+outputs/
+checkpoints/
+runs/
+
+# Python cache/build
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Local environments
+.venv/
+venv/
