@@ -6,12 +6,6 @@ ENV PYTHONUNBUFFERED=1
 # Install uv (manages Python itself)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Install system deps for OpenCV
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 # Copy project files
