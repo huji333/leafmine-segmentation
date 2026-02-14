@@ -8,13 +8,14 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# Install Python first (separate layer for caching)
+# Install Python
 COPY .python-version ./
 RUN uv python install
 
-# Install dependencies only (skip building the local project)
-COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-install-project --verbose
+# Install dependencies via pip (avoid uv sync hang)
+COPY pyproject.toml uv.lock ./
+RUN uv export --frozen --no-emit-project -o requirements.txt && \
+    uv pip install --system -r requirements.txt
 
 # Copy source
 COPY src/ src/
