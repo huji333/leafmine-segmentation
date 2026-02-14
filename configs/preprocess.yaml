@@ -1,0 +1,13 @@
+raw_image_dir: data/raw/images
+raw_mask_dir: data/raw/masks
+output_image_dir: data/processed/images
+output_mask_dir: data/processed/masks
+split_dir: data/splits
+
+# Background removal
+bg_threshold: 230
+min_area: 10000
+
+# Train/val split
+val_ratio: 0.2
+random_seed: 42

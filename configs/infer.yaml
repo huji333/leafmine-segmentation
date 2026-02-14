@@ -1,0 +1,22 @@
+checkpoint_path: checkpoints/best_model.pth
+
+model:
+  encoder: resnet34
+  encoder_weights: imagenet
+  in_channels: 3
+  classes: 1
+
+inference:
+  patch_size: 1024
+  overlap_ratio: 0.25
+  batch_size: 4
+  threshold: 0.5
+  amp: true
+  num_workers: 4
+
+preprocess:
+  bg_threshold: 230
+  min_area: 10000
+
+input_dir: data/raw/images
+output_dir: outputs

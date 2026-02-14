@@ -1,8 +1,7 @@
-# Leafmine Segmentation: Initial Architecture Plan
+# Leafmine Segmentation
 
 ## Goal
 - Build a U-Net based segmentation pipeline to infer `mine-only` masks from scanned leaf images.
-- Keep this phase limited to architecture, directory structure, and dependency setup.
 
 ## Scope (v0)
 - Input images are grayscale scanner images with white background.
@@ -13,42 +12,42 @@
 - Preprocessing is mandatory for both training and inference.
 - Inference output is PNG mask restored to the original image size.
 
-## Proposed Directory Structure
+## Directory Structure
 ```text
 leafmine-segmentation/
   configs/
-    preprocess.yaml
-    train.yaml
-    infer.yaml
+    preprocess.yaml       # Background threshold, min area, split ratio
+    train.yaml            # Batch size, epochs, lr, augmentation, etc.
+    infer.yaml            # Checkpoint, overlap ratio, threshold
   data/
-    raw/images
-    raw/masks
-    processed/images
-    processed/masks
-    splits/
+    raw/images/           # Original scanner images
+    raw/masks/            # Annotation masks
+    processed/images/     # Cropped leaf images
+    processed/masks/      # Cropped leaf masks
+    splits/               # train.json / val.json
   src/leafmine_seg/
     preprocessing/
-      leaf_extractor.py
+      leaf_extractor.py   # White-bg removal, connected-component bbox crop
     datasets/
-      dataset.py
-      tiling.py
-      transforms.py
+      dataset.py          # PyTorch Dataset (random crop, gray->3ch)
+      tiling.py           # Random crop (train) / grid tiling (infer)
+      transforms.py       # Albumentations augmentation pipelines
     models/
-      factory.py
-      losses.py
-      metrics.py
+      factory.py          # smp.Unet(resnet34, imagenet)
+      losses.py           # DiceBCELoss
+      metrics.py          # IoU, Dice
     training/
-      trainer.py
-      validate.py
+      trainer.py          # Training loop (AMP, checkpoint, TensorBoard/CSV)
+      validate.py         # Validation loop
     inference/
-      predictor.py
-      stitch.py
+      predictor.py        # Tile-based batch inference
+      stitch.py           # Overlap averaging -> binary mask
     io/
-      png_writer.py
+      png_writer.py       # Save mask as PNG
   scripts/
-    prepare_data.py
-    train.py
-    predict.py
+    prepare_data.py       # CLI: preprocess + split generation
+    train.py              # CLI: model training
+    predict.py            # CLI: inference
 ```
 
 ## Preprocessing Policy
@@ -59,18 +58,31 @@ leafmine-segmentation/
 
 ## Modeling Policy
 - Use `segmentation_models.pytorch` for U-Net construction.
+- Encoder: ResNet34 (ImageNet pretrained).
 - Convert grayscale input to 3-channel before model input (`gray -> repeat(3)`).
+- Normalize with ImageNet statistics (mean/std).
+- Loss: DiceLoss + BCEWithLogitsLoss (weighted sum).
 - Use binary mask target (`0/255`) consistently.
 
-## Output Policy
-- Save inference mask as PNG.
-- Reconstruct final mask to original image size after tile prediction and stitching.
+## Training Policy
+- Random 1024x1024 crop per image (padded if smaller).
+- Augmentation: HorizontalFlip, VerticalFlip, RandomRotate90, RandomBrightnessContrast, GaussNoise.
+- AMP (mixed precision) enabled by default.
+- Best model checkpoint saved by validation Dice score.
 
-## Docker Policy (Planned)
-- GPU-enabled container (CUDA runtime base image).
+## Inference Policy
+- Grid tiling with configurable overlap (default 25%).
+- Overlap regions averaged before thresholding.
+- Reconstruct final mask to original image size after stitching.
+- Save inference mask as PNG.
+
+## Docker Policy
+- Base: `nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04` + Python 3.9 (deadsnakes).
+- Package management via `uv`.
 - Run with `gpus: all` via Docker Compose.
-- Mount `data/` as volume and keep datasets outside image layers.
+- Mount `data/`, `checkpoints/`, `outputs/`, `runs/` as volumes.
+- Makefile targets: `build`, `preprocess`, `train`, `predict`, `shell`.
 
 ## Current Status
-- Architecture and dependency baseline are defined.
-- Training/inference implementation has not started yet.
+- Full pipeline implemented: preprocess -> train -> predict.
+- Docker / Makefile environment ready.
