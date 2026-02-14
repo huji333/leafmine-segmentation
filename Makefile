@@ -3,7 +3,7 @@
 RUN := docker compose run --rm leafmine
 
 build:
-	docker compose build
+	DOCKER_BUILDKIT=1 docker compose build
 
 preprocess:
 	$(RUN) python scripts/prepare_data.py --config configs/preprocess.yaml
