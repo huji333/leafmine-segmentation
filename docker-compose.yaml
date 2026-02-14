@@ -1,0 +1,18 @@
+services:
+  leafmine:
+    build: .
+    image: leafmine-segmentation
+    volumes:
+      - ./data:/app/data
+      - ./checkpoints:/app/checkpoints
+      - ./outputs:/app/outputs
+      - ./runs:/app/runs
+      - ./configs:/app/configs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: "8g"
