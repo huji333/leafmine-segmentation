@@ -3,7 +3,7 @@ name = "leafmine-segmentation"
 version = "0.1.0"
 description = "U-Net segmentation pipeline for leafmine detection"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.13"
 dependencies = [
     "albumentations>=1.4.0",
     "numpy>=1.24.0",
