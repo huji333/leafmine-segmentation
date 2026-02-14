@@ -1,29 +1,27 @@
-FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+FROM python:3.13-slim
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHONUNBUFFERED=1
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Install uv (manages Python itself)
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
 
 WORKDIR /app
 
-# Install Python
-COPY .python-version ./
-RUN uv python install
-
-# Install dependencies via pip (avoid uv sync hang)
-COPY pyproject.toml uv.lock ./
-RUN uv export --frozen --no-emit-project -o requirements.txt && \
-    uv pip install --system -r requirements.txt
+# Install dependencies (cached separately from source)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=README.md,target=README.md \
+    uv sync --locked --no-install-project --no-dev
 
 # Copy source
-COPY src/ src/
-COPY scripts/ scripts/
-COPY configs/ configs/
+COPY . /app
 
-# Make leafmine_seg importable without package install
-ENV PYTHONPATH=/app/src
+# Install the project itself
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev
 
-# Default command
-CMD ["uv", "run", "python", "-c", "print('leafmine-segmentation ready')"]
+# Activate venv by putting it on PATH
+ENV PATH="/app/.venv/bin:$PATH"
+
+CMD ["python", "-c", "print('leafmine-segmentation ready')"]

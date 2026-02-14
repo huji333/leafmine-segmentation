@@ -7,7 +7,6 @@ services:
       - ./checkpoints:/app/checkpoints
       - ./outputs:/app/outputs
       - ./runs:/app/runs
-      - ./configs:/app/configs
     deploy:
       resources:
         reservations:
