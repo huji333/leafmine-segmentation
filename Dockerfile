@@ -20,10 +20,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
+# Pin uv to use Python 3.9
+ENV UV_PYTHON=python3.9
+COPY .python-version /root/.python-version
+
 WORKDIR /app
 
 # Copy project files
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md .python-version ./
 COPY src/ src/
 COPY scripts/ scripts/
 COPY configs/ configs/
