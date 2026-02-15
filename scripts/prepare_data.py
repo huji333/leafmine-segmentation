@@ -52,22 +52,30 @@ def main() -> None:
     # Process each image-mask pair
     all_outputs: list[str] = []
     for img_path in image_files:
-        mask_path = raw_mask_dir / img_path.name
-        if not mask_path.exists():
-            # Try common mask naming patterns
+        # Find masks: look for {stem}_1.ext, {stem}_2.ext, ... pattern
+        mask_paths: list[Path] = []
+        for suffix in image_extensions:
+            mask_paths.extend(
+                sorted(raw_mask_dir.glob(f"{img_path.stem}_*{suffix}"))
+            )
+
+        # Also check for exact name match (single mask case)
+        if not mask_paths:
             for suffix in image_extensions:
                 candidate = raw_mask_dir / (img_path.stem + suffix)
                 if candidate.exists():
-                    mask_path = candidate
+                    mask_paths = [candidate]
                     break
 
-        if not mask_path.exists():
+        if not mask_paths:
             logger.warning(f"No mask found for {img_path.name}, skipping.")
             continue
 
+        logger.info(f"Found {len(mask_paths)} mask(s) for {img_path.name}")
+
         try:
             saved = process_image_pair(
-                img_path, mask_path, output_image_dir, output_mask_dir,
+                img_path, mask_paths, output_image_dir, output_mask_dir,
                 bg_threshold=bg_threshold, min_area=min_area,
             )
             all_outputs.extend(p.name for p in saved)
