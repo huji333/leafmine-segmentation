@@ -21,6 +21,7 @@ def extract_leaf_bboxes(
     image: np.ndarray,
     bg_threshold: int = 230,
     min_area: int = 10000,
+    max_aspect_ratio: float = 5.0,
 ) -> list[BBox]:
     """Find bounding boxes of leaf regions in a grayscale scanner image.
 
@@ -28,6 +29,8 @@ def extract_leaf_bboxes(
         image: Grayscale image (H, W) uint8.
         bg_threshold: Pixels above this value are treated as background.
         min_area: Minimum connected-component area to keep.
+        max_aspect_ratio: Reject components whose aspect ratio exceeds this
+            value (filters scanner-edge strips).
 
     Returns:
         List of BBox for each detected leaf region.
@@ -52,6 +55,10 @@ def extract_leaf_bboxes(
         y = stats[i, cv2.CC_STAT_TOP]
         w = stats[i, cv2.CC_STAT_WIDTH]
         h = stats[i, cv2.CC_STAT_HEIGHT]
+        # Skip scanner-edge strips (extremely elongated regions)
+        aspect = max(w, h) / max(min(w, h), 1)
+        if aspect > max_aspect_ratio:
+            continue
         bboxes.append(BBox(x=x, y=y, w=w, h=h))
 
     return bboxes
@@ -126,18 +133,18 @@ def process_image_pair(
     if not bboxes:
         return saved
 
-    # Use only the largest bbox to avoid false detections (e.g. thin white strips)
-    bbox = max(bboxes, key=lambda b: b.w * b.h)
-    out_name = f"{stem}.png"
+    for idx, bbox in enumerate(bboxes):
+        suffix = f"_{idx}" if len(bboxes) > 1 else ""
+        out_name = f"{stem}{suffix}.png"
 
-    img_crop = crop_region(image, bbox)
-    msk_crop = crop_region(mask, bbox)
+        img_crop = crop_region(image, bbox)
+        msk_crop = crop_region(mask, bbox)
 
-    out_img = output_image_dir / out_name
-    out_msk = output_mask_dir / out_name
+        out_img = output_image_dir / out_name
+        out_msk = output_mask_dir / out_name
 
-    cv2.imwrite(str(out_img), img_crop)
-    cv2.imwrite(str(out_msk), msk_crop)
-    saved.append(out_img)
+        cv2.imwrite(str(out_img), img_crop)
+        cv2.imwrite(str(out_msk), msk_crop)
+        saved.append(out_img)
 
     return saved
