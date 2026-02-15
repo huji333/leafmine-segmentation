@@ -123,18 +123,21 @@ def process_image_pair(
     saved: list[Path] = []
     stem = image_path.stem
 
-    for idx, bbox in enumerate(bboxes):
-        suffix = f"_{idx}" if len(bboxes) > 1 else ""
-        out_name = f"{stem}{suffix}.png"
+    if not bboxes:
+        return saved
 
-        img_crop = crop_region(image, bbox)
-        msk_crop = crop_region(mask, bbox)
+    # Use only the largest bbox to avoid false detections (e.g. thin white strips)
+    bbox = max(bboxes, key=lambda b: b.w * b.h)
+    out_name = f"{stem}.png"
 
-        out_img = output_image_dir / out_name
-        out_msk = output_mask_dir / out_name
+    img_crop = crop_region(image, bbox)
+    msk_crop = crop_region(mask, bbox)
 
-        cv2.imwrite(str(out_img), img_crop)
-        cv2.imwrite(str(out_msk), msk_crop)
-        saved.append(out_img)
+    out_img = output_image_dir / out_name
+    out_msk = output_mask_dir / out_name
+
+    cv2.imwrite(str(out_img), img_crop)
+    cv2.imwrite(str(out_msk), msk_crop)
+    saved.append(out_img)
 
     return saved
