@@ -26,6 +26,9 @@ uv sync
 
 Place raw scanner images in `data/raw/images/` and corresponding PNG masks in `data/raw/masks/`.
 
+Multiple masks per image are supported: name them `{stem}_1.png`, `{stem}_2.png`, etc.
+They will be merged via logical OR before processing.
+
 ```bash
 # Docker
 make preprocess
@@ -35,9 +38,24 @@ uv run python scripts/prepare_data.py --config configs/preprocess.yaml
 ```
 
 This will:
-- Extract leaf regions from white background
+- Extract leaf regions from white background using connected-component analysis
+- Filter out scanner artifacts (edge strips, border frames) automatically
 - Save cropped images/masks to `data/processed/`
 - Generate train/val splits in `data/splits/`
+
+If multiple leaf regions are found in one image, they are saved as `{stem}_0.png`, `{stem}_1.png`, etc.
+
+**Re-running preprocessing** (clears processed data and splits, then re-runs):
+
+```bash
+make reprocess
+```
+
+To only clear processed data without re-running:
+
+```bash
+make remove_processed
+```
 
 ### 2. Train
 
@@ -77,9 +95,18 @@ All settings are in YAML files under `configs/`:
 
 | File | Purpose |
 |------|---------|
-| `preprocess.yaml` | Background threshold, min area, split ratio |
+| `preprocess.yaml` | Background threshold, area filters, aspect ratio filter, split ratio |
 | `train.yaml` | Batch size, epochs, LR, augmentation, encoder |
 | `infer.yaml` | Checkpoint path, overlap ratio, threshold |
+
+Key preprocessing parameters:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `bg_threshold` | `200` | Pixels above this are treated as background |
+| `min_area` | `10000` | Minimum component area to keep |
+| `max_aspect_ratio` | `5.0` | Rejects scanner-edge strips |
+| `max_area_ratio` | `0.8` | Rejects components spanning the whole image (scanner border frames) |
 
 ## Project Structure
 

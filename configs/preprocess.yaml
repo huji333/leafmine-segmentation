@@ -5,7 +5,7 @@ output_mask_dir: data/processed/masks
 split_dir: data/splits
 
 # Background removal
-bg_threshold: 230
+bg_threshold: 200
 min_area: 10000
 max_aspect_ratio: 5.0   # Reject scanner-edge strips (w/h or h/w > this)
 max_area_ratio: 0.8     # Reject components covering > 80% of the image (scanner border frame)

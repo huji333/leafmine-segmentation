@@ -105,7 +105,7 @@ def process_image_pair(
     mask_paths: Path | list[Path],
     output_image_dir: Path,
     output_mask_dir: Path,
-    bg_threshold: int = 230,
+    bg_threshold: int = 200,
     min_area: int = 10000,
     max_aspect_ratio: float = 5.0,
     max_area_ratio: float = 0.8,
@@ -119,9 +119,15 @@ def process_image_pair(
         output_mask_dir: Directory to save cropped masks.
         bg_threshold: Pixels above this value are treated as background.
         min_area: Minimum connected-component area to keep.
+        max_aspect_ratio: Reject components whose aspect ratio exceeds this
+            value (filters scanner-edge strips).
+        max_area_ratio: Reject components whose bbox covers more than this
+            fraction of the total image area (filters scanner-border frames).
 
     Returns:
         List of output image paths that were saved.
+        If multiple leaf regions are found, files are named {stem}_0.png,
+        {stem}_1.png, etc.; a single region keeps the original stem.
     """
     image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
     if image is None:
