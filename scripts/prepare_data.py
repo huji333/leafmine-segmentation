@@ -34,6 +34,8 @@ def main() -> None:
 
     bg_threshold = cfg.get("bg_threshold", 230)
     min_area = cfg.get("min_area", 10000)
+    max_aspect_ratio = cfg.get("max_aspect_ratio", 5.0)
+    max_area_ratio = cfg.get("max_area_ratio", 0.8)
     val_ratio = cfg.get("val_ratio", 0.2)
     random_seed = cfg.get("random_seed", 42)
 
@@ -77,6 +79,7 @@ def main() -> None:
             saved = process_image_pair(
                 img_path, mask_paths, output_image_dir, output_mask_dir,
                 bg_threshold=bg_threshold, min_area=min_area,
+                max_aspect_ratio=max_aspect_ratio, max_area_ratio=max_area_ratio,
             )
             all_outputs.extend(p.name for p in saved)
             logger.info(f"Processed {img_path.name} -> {len(saved)} region(s)")

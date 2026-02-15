@@ -1,4 +1,4 @@
-.PHONY: build preprocess train predict shell
+.PHONY: build preprocess remove_processed reprocess train predict shell
 
 RUN := docker compose run --rm leafmine
 
@@ -7,6 +7,11 @@ build:
 
 preprocess:
 	$(RUN) python scripts/prepare_data.py --config configs/preprocess.yaml
+
+remove_processed:
+	rm -rf data/processed data/splits
+
+reprocess: remove_processed preprocess
 
 train:
 	$(RUN) python scripts/train.py --config configs/train.yaml

@@ -7,6 +7,8 @@ split_dir: data/splits
 # Background removal
 bg_threshold: 230
 min_area: 10000
+max_aspect_ratio: 5.0   # Reject scanner-edge strips (w/h or h/w > this)
+max_area_ratio: 0.8     # Reject components covering > 80% of the image (scanner border frame)
 
 # Train/val split
 val_ratio: 0.2

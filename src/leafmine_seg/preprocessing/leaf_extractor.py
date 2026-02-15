@@ -22,6 +22,7 @@ def extract_leaf_bboxes(
     bg_threshold: int = 230,
     min_area: int = 10000,
     max_aspect_ratio: float = 5.0,
+    max_area_ratio: float = 0.8,
 ) -> list[BBox]:
     """Find bounding boxes of leaf regions in a grayscale scanner image.
 
@@ -31,6 +32,8 @@ def extract_leaf_bboxes(
         min_area: Minimum connected-component area to keep.
         max_aspect_ratio: Reject components whose aspect ratio exceeds this
             value (filters scanner-edge strips).
+        max_area_ratio: Reject components whose bbox covers more than this
+            fraction of the total image area (filters scanner-border frames).
 
     Returns:
         List of BBox for each detected leaf region.
@@ -39,6 +42,9 @@ def extract_leaf_bboxes(
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     else:
         gray = image
+
+    img_h, img_w = gray.shape[:2]
+    img_area = img_h * img_w
 
     # Threshold: foreground = pixels darker than bg_threshold
     _, binary = cv2.threshold(gray, bg_threshold, 255, cv2.THRESH_BINARY_INV)
@@ -58,6 +64,10 @@ def extract_leaf_bboxes(
         # Skip scanner-edge strips (extremely elongated regions)
         aspect = max(w, h) / max(min(w, h), 1)
         if aspect > max_aspect_ratio:
+            continue
+        # Skip components whose bbox spans nearly the entire image
+        # (scanner border frame that connects everything)
+        if (w * h) / img_area > max_area_ratio:
             continue
         bboxes.append(BBox(x=x, y=y, w=w, h=h))
 
@@ -97,6 +107,8 @@ def process_image_pair(
     output_mask_dir: Path,
     bg_threshold: int = 230,
     min_area: int = 10000,
+    max_aspect_ratio: float = 5.0,
+    max_area_ratio: float = 0.8,
 ) -> list[Path]:
     """Process a single image-mask pair: extract leaf regions and save crops.
 
@@ -122,7 +134,13 @@ def process_image_pair(
         if mask is None:
             raise FileNotFoundError(f"Cannot read mask: {mask_paths}")
 
-    bboxes = extract_leaf_bboxes(image, bg_threshold=bg_threshold, min_area=min_area)
+    bboxes = extract_leaf_bboxes(
+        image,
+        bg_threshold=bg_threshold,
+        min_area=min_area,
+        max_aspect_ratio=max_aspect_ratio,
+        max_area_ratio=max_area_ratio,
+    )
 
     output_image_dir.mkdir(parents=True, exist_ok=True)
     output_mask_dir.mkdir(parents=True, exist_ok=True)

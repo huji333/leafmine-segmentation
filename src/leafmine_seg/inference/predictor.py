@@ -39,6 +39,7 @@ class Predictor:
         self.bg_threshold = preprocess_cfg.get("bg_threshold", 230)
         self.min_area = preprocess_cfg.get("min_area", 10000)
         self.max_aspect_ratio = preprocess_cfg.get("max_aspect_ratio", 5.0)
+        self.max_area_ratio = preprocess_cfg.get("max_area_ratio", 0.8)
 
         self.model = self._load_model()
 
@@ -69,6 +70,7 @@ class Predictor:
             bg_threshold=self.bg_threshold,
             min_area=self.min_area,
             max_aspect_ratio=self.max_aspect_ratio,
+            max_area_ratio=self.max_area_ratio,
         )
 
         # Full-size output mask
