@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import re
 from pathlib import Path
 
 import yaml
@@ -54,18 +55,27 @@ def main() -> None:
     # Process each image-mask pair
     all_outputs: list[str] = []
     for img_path in image_files:
-        # Find masks: look for {stem}_1.ext, {stem}_2.ext, ... pattern
+        # Find masks: look for {stem}_<integer>.<ext> pattern only.
+        # Using a digit-only index prevents stems that are prefixes of each
+        # other (e.g. "leaf" vs "leaf_old") from matching each other's masks.
         mask_paths: list[Path] = []
-        for suffix in image_extensions:
-            mask_paths.extend(
-                sorted(raw_mask_dir.glob(f"{img_path.stem}_*{suffix}"))
-            )
+        for candidate in sorted(raw_mask_dir.iterdir()):
+            if candidate.suffix.lower() not in image_extensions:
+                continue
+            if re.fullmatch(
+                rf"{re.escape(img_path.stem)}_\d+",
+                candidate.stem,
+            ):
+                mask_paths.append(candidate)
 
-        # Also check for exact name match (single mask case)
+        # Single-mask fallback: exact filename match (case-insensitive)
         if not mask_paths:
-            for suffix in image_extensions:
-                candidate = raw_mask_dir / (img_path.stem + suffix)
-                if candidate.exists():
+            stem_lower = img_path.stem.lower()
+            for candidate in raw_mask_dir.iterdir():
+                if (
+                    candidate.stem.lower() == stem_lower
+                    and candidate.suffix.lower() in image_extensions
+                ):
                     mask_paths = [candidate]
                     break
 
